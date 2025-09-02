@@ -13,6 +13,16 @@ return new class extends Migration
     {
         Schema::create('borrowings', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('book_id')->constrained('books')->onDelete('cascade');
+            $table->foreignId('member_id')->constrained('members')->onDelete('cascade');
+            $table->date('borrowed_date');
+            $table->date('due_date');
+            $table->date('returned_date')->nullable();
+            $table->enum('status', ['borrowed', 'returned', 'overdue'])->default('borrowed');
+
+            //? index
+            $table->index(['member_id', 'status']);
+            $table->index('due_date');
             $table->timestamps();
         });
     }
