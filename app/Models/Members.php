@@ -14,6 +14,7 @@ class Members extends Model
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'address',
         'membership_date',
         'status',
@@ -23,6 +24,10 @@ class Members extends Model
         'membership_date' => 'date',
     ];
 
+    public function borrowings(): HasMany
+    {
+        return $this->hasMany(Borrowings::class, 'member_id', 'id');
+    }
 
     public function activeBorrowings(): HasMany
     {

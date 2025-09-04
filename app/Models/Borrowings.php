@@ -26,8 +26,14 @@ class Borrowings extends Model
         return $this->belongsTo(Books::class);
     }
 
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(Members::class);
+    }
+
     //? check if borrowing is overdue
-    public function isOverdue(): bool {
+    public function isOverdue(): bool
+    {
         return $this->due_date < Carbon::today() && $this->status === 'borrowed';
     }
 }
