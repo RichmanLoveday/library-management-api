@@ -54,4 +54,9 @@ class Books extends Model
             $this->increment('available_copies');
         }
     }
+
+    public function isAvailable(): bool
+    {
+        return $this->available_copies > 0;
+    }
 }
