@@ -6,7 +6,9 @@ use App\Http\Requests\StoreBorrowingRequest;
 use App\Http\Resources\BorrowingResource;
 use App\Models\Books;
 use App\Models\Borrowings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class BorrowingController extends Controller
 {
@@ -66,7 +68,7 @@ class BorrowingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to create borrowing: ' . $e->getMessage()
+                'message' => "Failed to borrow book"
             ], 500);
         }
     }
@@ -74,10 +76,69 @@ class BorrowingController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string|int $id)
     {
-        //
+        try {
+            $borrowing = Borrowings::with(['book', 'member'])->findOrFail($id);
+            return new BorrowingResource($borrowing);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Borrowing not found'
+            ], 500);
+        }
     }
+
+
+    public function returnBook(string|int $id): JsonResponse
+    {
+        try {
+            $borrowing = Borrowings::with('book')->findOrFail($id);
+
+            if ($borrowing->status === 'returned') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Book already returned'
+                ], 422);
+            }
+
+            //? update borrowing status and return date
+            $borrowing->status = 'returned';
+            $borrowing->returned_date = now();
+            $borrowing->save();
+
+            //? update book available copies
+            $borrowing->book->returnBook();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Book returned successfully',
+                'data' => new BorrowingResource($borrowing)
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to return book: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function overDue(): JsonResource
+    {
+        $overDueBorrowings = Borrowings::with(['book', 'member'])
+            ->where('status', 'borrowed')
+            ->where('due_date', '<', now())
+            ->get();
+
+        //? update status to over due
+        Borrowings::where('status', 'borrowed')
+            ->where('due_date', '<', now())
+            ->update(['status' => 'overdue']);
+
+        return BorrowingResource::collection($overDueBorrowings);
+    }
+
 
     /**
      * Update the specified resource in storage.
