@@ -86,6 +86,13 @@ class BookController extends Controller
         }
     }
 
+    public function getFiveBooks(): JsonResource
+    {
+        $books = Books::latest()->take(5);
+        // dd($books);
+        return BookResource::collection($books);
+    }
+
     /**
      * Remove the specified resource from storage.
      */
